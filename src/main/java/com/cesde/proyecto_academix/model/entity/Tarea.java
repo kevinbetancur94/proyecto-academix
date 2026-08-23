@@ -1,7 +1,7 @@
-package com.cesde.proyectoacademix.model.entity;
+package com.cesde.proyecto_academix.model.entity;
 
-import com.cesde.proyectoacademix.model.base.BaseEntity;
-import com.cesde.proyectoacademix.model.enums.TipoTarea;
+import com.cesde.proyecto_academix.model.base.BaseEntity;
+import com.cesde.proyecto_academix.model.enums.TipoTarea;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

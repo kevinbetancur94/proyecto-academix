@@ -65,6 +65,17 @@
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<!-- Carga variables de .env como si fueran variables de entorno de Spring.
+		     Nota: springboot4-dotenv es la variante para Spring Boot 4 (springboot3-dotenv para Boot 3).
+		     Verifica la última versión estable en https://github.com/paulschwarz/spring-dotenv/releases
+		     antes de fijar el número de versión; al momento de escribir esto la última era 5.0.1. -->
+		<dependency>
+			<groupId>me.paulschwarz</groupId>
+			<artifactId>springboot4-dotenv</artifactId>
+			<version>5.0.1</version>
+			<optional>true</optional>
+		</dependency>
 	</dependencies>
 
 	<build>
