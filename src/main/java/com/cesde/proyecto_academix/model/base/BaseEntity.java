@@ -1,3 +1,7 @@
+package com.cesde.proyecto_academix.model.base;
+
+public class BaseEntity {
+    
 package com.cesde.proyectoacademix.model.base;
 
 import jakarta.persistence.Column;
