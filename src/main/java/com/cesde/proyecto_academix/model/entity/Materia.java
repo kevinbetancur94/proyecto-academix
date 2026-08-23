@@ -45,3 +45,4 @@ public class Materia extends BaseEntity {
     @Builder.Default
     private Set<Tarea> tareas = new HashSet<>();
 }
+
