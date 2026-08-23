@@ -1,8 +1,8 @@
-package com.cesde.proyectoacademix.model.entity;
+package com.cesde.proyecto_academix.model.entity;
 
-import com.cesde.proyectoacademix.model.base.BaseEntity;
-import com.cesde.proyectoacademix.model.embeddable.Contacto;
-import com.cesde.proyectoacademix.model.enums.RolUsuario;
+import com.cesde.proyecto_academix.model.base.BaseEntity;
+import com.cesde.proyecto_academix.model.embeddable.Contacto;
+import com.cesde.proyecto_academix.model.enums.RolUsuario;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
