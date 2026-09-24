@@ -1,8 +1,7 @@
 package com.cesde.proyecto_academix.controller;
 
-import com.cesde.proyecto_academix.model.entity.Calificacion;
-import com.cesde.proyecto_academix.service.CalificacionService;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,12 +13,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.cesde.proyecto_academix.model.entity.Calificacion;
+import com.cesde.proyecto_academix.service.CalificacionService;
 
-// Va en: src/main/java/com/cesde/proyecto_academix/controller/CalificacionController.java
-//
-// Mismo esqueleto que UsuarioController en la guía de estudio (secc. 6): GET, GET /{id},
-// POST, PUT /{id}, DELETE /{id}, cada uno con try/catch de IllegalArgumentException.
+import lombok.RequiredArgsConstructor;
+
+
 @RestController
 @RequestMapping("/api/calificaciones")
 @RequiredArgsConstructor
