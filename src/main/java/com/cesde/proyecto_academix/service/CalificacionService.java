@@ -1,25 +1,22 @@
 package com.cesde.proyecto_academix.service;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
+import com.cesde.proyecto_academix.dto.CalificacionRequestDTO;
+import com.cesde.proyecto_academix.dto.CalificacionResponseDTO;
+import com.cesde.proyecto_academix.exception.RecursoNoEncontradoException;
+import com.cesde.proyecto_academix.exception.ReglaDeNegocioException;
 import com.cesde.proyecto_academix.model.entity.Calificacion;
 import com.cesde.proyecto_academix.model.entity.Materia;
 import com.cesde.proyecto_academix.model.entity.Usuario;
 import com.cesde.proyecto_academix.model.enums.RolUsuario;
 import com.cesde.proyecto_academix.repository.CalificacionRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.util.List;
-
-// Va en: src/main/java/com/cesde/proyecto_academix/service/CalificacionService.java
-//
 // Calificacion depende de Usuario y Materia, por eso este Service inyecta
-// UsuarioService y MateriaService (NO sus repository directamente) — así respeta
-// la capa de negocio de esas entidades, tal como explica la guía de estudio (secc. 1).
-//
-// IMPORTANTE: para que esto compile, UsuarioService y MateriaService ya deben tener
-// un método obtenerPorId(Long id). Si Kev o quien haga Materia todavía no lo ha
-// subido, puedes escribir este archivo igual y ajustarlo cuando su rama se actualice
-// (así lo dice la guía de reparto, sección "Orden de trabajo").
+// UsuarioService y MateriaService (NO sus repositories directamente).
 @Service
 @RequiredArgsConstructor
 public class CalificacionService {
@@ -28,80 +25,101 @@ public class CalificacionService {
     private final UsuarioService usuarioService;
     private final MateriaService materiaService;
 
-    public List<Calificacion> listarTodos() {
-        return calificacionRepository.findAll();
+    public List<CalificacionResponseDTO> listarTodos() {
+        return calificacionRepository.findAll().stream().map(this::convertirADTO).toList();
     }
 
-    public Calificacion obtenerPorId(Long id) {
+    public CalificacionResponseDTO obtenerPorId(Long id) {
+        return convertirADTO(obtenerEntidadPorId(id));
+    }
+
+    private Calificacion obtenerEntidadPorId(Long id) {
         return calificacionRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("No existe una calificación con id " + id));
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe una calificación con id " + id));
     }
 
-    public Calificacion crear(Calificacion calificacion) {
-        Usuario estudiante = usuarioService.obtenerPorId(calificacion.getEstudiante().getId());
-        Materia materia = materiaService.obtenerPorId(calificacion.getMateria().getId());
+    public CalificacionResponseDTO crear(CalificacionRequestDTO dto) {
+        if (dto.estudianteId() == null) {
+            throw new ReglaDeNegocioException("La calificación debe estar asociada a un estudiante");
+        }
+        if (dto.materiaId() == null) {
+            throw new ReglaDeNegocioException("La calificación debe estar asociada a una materia");
+        }
+
+        Usuario estudiante = usuarioService.obtenerEntidadPorId(dto.estudianteId());
+        Materia materia = materiaService.obtenerEntidadPorId(dto.materiaId());
 
         validarRolEstudiante(estudiante);
-        validarNotasEnRango(calificacion);
+        validarNotaEnRango(dto.act1(), "actividad 1");
+        validarNotaEnRango(dto.act2(), "actividad 2");
+        validarNotaEnRango(dto.act3(), "actividad 3");
 
+        Calificacion calificacion = new Calificacion();
         calificacion.setEstudiante(estudiante);
         calificacion.setMateria(materia);
-        return calificacionRepository.save(calificacion);
+        calificacion.setAct1(dto.act1());
+        calificacion.setAct2(dto.act2());
+        calificacion.setAct3(dto.act3());
+        calificacion.setObservacion(dto.observacion());
+
+        return convertirADTO(calificacionRepository.save(calificacion));
     }
 
-    public Calificacion actualizar(Long id, Calificacion datos) {
-        Calificacion existente = obtenerPorId(id);
+    // Actualización parcial: solo se modifican los campos que vienen en el DTO (no nulos)
+    public CalificacionResponseDTO actualizar(Long id, CalificacionRequestDTO dto) {
+        Calificacion existente = obtenerEntidadPorId(id);
 
-        if (datos.getEstudiante() != null) {
-            Usuario estudiante = usuarioService.obtenerPorId(datos.getEstudiante().getId());
+        if (dto.estudianteId() != null) {
+            Usuario estudiante = usuarioService.obtenerEntidadPorId(dto.estudianteId());
             validarRolEstudiante(estudiante);
             existente.setEstudiante(estudiante);
         }
-        if (datos.getMateria() != null) {
-            Materia materia = materiaService.obtenerPorId(datos.getMateria().getId());
-            existente.setMateria(materia);
+        if (dto.materiaId() != null) {
+            existente.setMateria(materiaService.obtenerEntidadPorId(dto.materiaId()));
         }
-        if (datos.getAct1() != null) {
-            existente.setAct1(datos.getAct1());
+        if (dto.act1() != null) {
+            existente.setAct1(dto.act1());
         }
-        if (datos.getAct2() != null) {
-            existente.setAct2(datos.getAct2());
+        if (dto.act2() != null) {
+            existente.setAct2(dto.act2());
         }
-        if (datos.getAct3() != null) {
-            existente.setAct3(datos.getAct3());
+        if (dto.act3() != null) {
+            existente.setAct3(dto.act3());
         }
-        if (datos.getObservacion() != null) {
-            existente.setObservacion(datos.getObservacion());
+        if (dto.observacion() != null) {
+            existente.setObservacion(dto.observacion());
         }
 
-        validarNotasEnRango(existente);
+        validarNotaEnRango(existente.getAct1(), "actividad 1");
+        validarNotaEnRango(existente.getAct2(), "actividad 2");
+        validarNotaEnRango(existente.getAct3(), "actividad 3");
 
-        return calificacionRepository.save(existente);
+        return convertirADTO(calificacionRepository.save(existente));
     }
 
     public void eliminar(Long id) {
-        Calificacion existente = obtenerPorId(id);
-        calificacionRepository.delete(existente);
+        calificacionRepository.delete(obtenerEntidadPorId(id));
     }
 
-    // Regla de negocio 1: el Usuario asignado como estudiante debe tener rol ESTUDIANTE
-    // (evita que por error se le asigne una calificación a un docente o acudiente).
+    // Regla de negocio 1: el Usuario asignado como estudiante debe tener rol ESTUDIANTE.
     private void validarRolEstudiante(Usuario estudiante) {
         if (estudiante.getRol() != RolUsuario.ESTUDIANTE) {
-            throw new IllegalArgumentException("El usuario asignado como estudiante no tiene rol ESTUDIANTE");
+            throw new ReglaDeNegocioException("El usuario asignado como estudiante no tiene rol ESTUDIANTE");
         }
     }
 
     // Regla de negocio 2: las notas de las 3 actividades deben estar entre 0.0 y 5.0.
-    private void validarNotasEnRango(Calificacion calificacion) {
-        validarNotaEnRango(calificacion.getAct1(), "actividad 1");
-        validarNotaEnRango(calificacion.getAct2(), "actividad 2");
-        validarNotaEnRango(calificacion.getAct3(), "actividad 3");
-    }
-
     private void validarNotaEnRango(Double nota, String nombreCampo) {
         if (nota == null || nota < 0.0 || nota > 5.0) {
-            throw new IllegalArgumentException("La nota de " + nombreCampo + " debe estar entre 0.0 y 5.0");
+            throw new ReglaDeNegocioException("La nota de " + nombreCampo + " debe estar entre 0.0 y 5.0");
         }
+    }
+
+    private CalificacionResponseDTO convertirADTO(Calificacion c) {
+        double promedio = (c.getAct1() + c.getAct2() + c.getAct3()) / 3.0;
+        return new CalificacionResponseDTO(c.getId(),
+                c.getEstudiante().getId(), c.getEstudiante().getNombre(),
+                c.getMateria().getId(), c.getMateria().getNombre(),
+                c.getAct1(), c.getAct2(), c.getAct3(), promedio, c.getObservacion());
     }
 }
