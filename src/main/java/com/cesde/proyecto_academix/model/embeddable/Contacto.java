@@ -1,4 +1,4 @@
-package com.cesde.proyectoacademix.model.embeddable;
+package com.cesde.proyecto_academix.model.embeddable;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
