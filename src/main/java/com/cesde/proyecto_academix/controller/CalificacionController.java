@@ -1,8 +1,7 @@
 package com.cesde.proyecto_academix.controller;
 
-import com.cesde.proyecto_academix.model.entity.Calificacion;
-import com.cesde.proyecto_academix.service.CalificacionService;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,12 +13,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.cesde.proyecto_academix.dto.CalificacionRequestDTO;
+import com.cesde.proyecto_academix.dto.CalificacionResponseDTO;
+import com.cesde.proyecto_academix.service.CalificacionService;
+import lombok.RequiredArgsConstructor;
 
-// Va en: src/main/java/com/cesde/proyecto_academix/controller/CalificacionController.java
-//
-// Mismo esqueleto que UsuarioController en la guía de estudio (secc. 6): GET, GET /{id},
-// POST, PUT /{id}, DELETE /{id}, cada uno con try/catch de IllegalArgumentException.
+/**
+ * Controlador de calificaciones.
+ * Recibe CalificacionRequestDTO y responde CalificacionResponseDTO; los errores los maneja GlobalExceptionHandler.
+ */
 @RestController
 @RequestMapping("/api/calificaciones")
 @RequiredArgsConstructor
@@ -28,45 +30,28 @@ public class CalificacionController {
     private final CalificacionService calificacionService;
 
     @GetMapping
-    public List<Calificacion> listar() {
+    public List<CalificacionResponseDTO> listar() {
         return calificacionService.listarTodos();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> obtenerPorId(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(calificacionService.obtenerPorId(id));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        }
+    public ResponseEntity<CalificacionResponseDTO> obtenerPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(calificacionService.obtenerPorId(id));
     }
 
     @PostMapping
-    public ResponseEntity<?> crear(@RequestBody Calificacion calificacion) {
-        try {
-            Calificacion creada = calificacionService.crear(calificacion);
-            return ResponseEntity.status(HttpStatus.CREATED).body(creada);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<CalificacionResponseDTO> crear(@RequestBody CalificacionRequestDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(calificacionService.crear(dto));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> actualizar(@PathVariable Long id, @RequestBody Calificacion datos) {
-        try {
-            return ResponseEntity.ok(calificacionService.actualizar(id, datos));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<CalificacionResponseDTO> actualizar(@PathVariable Long id, @RequestBody CalificacionRequestDTO dto) {
+        return ResponseEntity.ok(calificacionService.actualizar(id, dto));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminar(@PathVariable Long id) {
-        try {
-            calificacionService.eliminar(id);
-            return ResponseEntity.noContent().build();
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        }
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        calificacionService.eliminar(id);
+        return ResponseEntity.noContent().build();
     }
 }
