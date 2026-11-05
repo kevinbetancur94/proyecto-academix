@@ -1,10 +1,12 @@
 package com.cesde.proyecto_academix.exception;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -30,5 +32,15 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> manejarJsonInvalido(HttpMessageNotReadableException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("mensaje", "El cuerpo de la petición es inválido: revise el formato JSON, los enums y las fechas"));
+    }
+
+    // Falla de Bean Validation (@Valid): devuelve el detalle por campo
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> manejarValidacion(MethodArgumentNotValidException ex) {
+        Map<String, String> errores = ex.getBindingResult().getFieldErrors().stream()
+                .collect(Collectors.toMap(e -> e.getField(), e -> String.valueOf(e.getDefaultMessage()),
+                        (a, b) -> a));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("mensaje", "Hay datos inválidos en la petición", "errores", errores));
     }
 }

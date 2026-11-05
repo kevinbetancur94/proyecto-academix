@@ -1,5 +1,9 @@
 package com.cesde.proyecto_academix.dto.portal;
 
-/** Lo que envía la pantalla de Login: correo (en el campo "usuario"), contraseña y rol elegido. */
-public record LoginRequestDTO(String usuario, String password, String rol) {
+import jakarta.validation.constraints.NotBlank;
+
+public record LoginRequestDTO(
+        @NotBlank(message = "El usuario es obligatorio") String usuario,
+        @NotBlank(message = "La contraseña es obligatoria") String password,
+        @NotBlank(message = "El rol es obligatorio") String rol) {
 }

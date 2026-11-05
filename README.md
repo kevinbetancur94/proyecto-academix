@@ -5,18 +5,37 @@ API REST de gestión académica (usuarios, materias, tareas, calificaciones y bo
 - Base URL local: `http://localhost:8080`
 - Formato: JSON (en Postman: **Body → raw → JSON**)
 
+## Idea de negocio
+
+**Academix** es un portal académico que conecta a **estudiantes**, **acudientes** y **docentes**: el docente registra tareas y calificaciones por materia, el estudiante consulta sus notas y el acudiente hace seguimiento de sus hijos mediante boletines académicos.
+
+## Documentación interactiva (OpenAPI)
+
+Con la aplicación corriendo:
+
+| Herramienta | URL |
+| --- | --- |
+| Swagger UI | http://localhost:8080/swagger-ui.html |
+| Scalar | http://localhost:8080/scalar |
+| Contrato OpenAPI (JSON) | http://localhost:8080/v3/api-docs |
+
+Todos los controladores están documentados con `@Tag`, `@Operation` y `@ApiResponse`, y la información general se define en `config/OpenApiConfig`.
+
 ---
 
 ## 1. Cómo correrlo
 
 1. Java 21 o superior (el `pom.xml` pide 25; si tienes otra versión usa `-Djava.version=21`).
-2. Crea un archivo `.env` en la raíz del proyecto (junto al `pom.xml`) con tus datos de PostgreSQL:
+2. Copia `.env.example` como `.env` en la raíz del proyecto (junto al `pom.xml`) y completa tus datos de PostgreSQL (el `.env` está en `.gitignore`: **no se sube a Git**):
 
    ```
    DB_URL=jdbc:postgresql://TU_HOST:5432/TU_BD?sslmode=require
    DB_USERNAME=tu_usuario
    DB_PASSWORD=tu_clave
+   PORT=8080
    ```
+
+   Opcional: `SEED_DATA=true` carga datos de ejemplo (docente, estudiante, acudiente, una materia y una tarea) si la base está vacía.
 
 3. Ejecuta desde la carpeta del proyecto:
 
@@ -386,6 +405,8 @@ Reglas:
 | Calificación a un docente | `POST /api/calificaciones` con `estudianteId` de un docente | `400` |
 | Segundo boletín | `POST /api/boletines` dos veces para el mismo estudiante | `400` |
 | Rol inválido | `POST /api/usuarios` con `"rol": "VISITANTE"` | `400` |
+| Validación de campos | `POST /api/usuarios` con `"correo": "abc"` y sin `nombre` | `400` `{ "mensaje": "Hay datos inválidos en la petición", "errores": { "correo": "...", "nombre": "..." } }` |
+| Promedio fuera de rango | `POST /api/boletines` con `"promedioGeneral": 7` | `400` con el detalle del campo |
 
 ---
 
@@ -395,9 +416,10 @@ Reglas:
 src/main/java/com/cesde/proyecto_academix/
 ├── controller/   → reciben RequestDTO y devuelven ResponseDTO
 ├── service/      → reglas de negocio y conversión DTO ⇄ entidad
-├── repository/   → acceso a la base de datos (JPA)
+├── repository/   → acceso a la base de datos (JPA, con consultas derivadas y @Query)
 ├── model/        → entidades, enums y base común
-├── dto/          → objetos de entrada y salida (sin password)
+├── dto/          → objetos de entrada (con Bean Validation) y salida (sin password)
+├── config/       → CorsConfig, OpenApiConfig y DataSeederConfig (opcional)
 └── exception/    → excepciones propias + manejador global de errores
 ```
 
@@ -414,3 +436,18 @@ Flujo de una petición:
 Postman ─RequestDTO─▶ Controller ─▶ Service ─Entidad─▶ Base de datos
 Postman ◀─ResponseDTO─ Controller ◀─ Service ◀─Entidad─ Base de datos
 ```
+
+---
+
+## 12. Cambios respecto a la versión anterior
+
+| Área | Cambio |
+| --- | --- |
+| Validación | Se agregó `spring-boot-starter-validation`. Los Request DTOs usan `@NotBlank`, `@NotNull`, `@Email`, `@Size`, `@Min`, `@DecimalMin/@DecimalMax`; los controladores usan `@Valid`. En `CalificacionRequestDTO` los campos permiten `null` para conservar la actualización parcial (PUT). |
+| Manejo de errores | `GlobalExceptionHandler` ahora responde `400` con el detalle por campo cuando falla `@Valid`. |
+| OpenAPI | `@Tag`, `@Operation` y `@ApiResponses` en los 7 controladores (CRUD, Auth y Portal) y nueva clase `config/OpenApiConfig`. |
+| Repositorios | `BoletinAcademicoRepository` (+2 consultas: `findByMateriasEnRiesgoGreaterThanOrderByMateriasEnRiesgoDesc` y `@Query buscarConPromedioMinimo`) y `TareaRepository` (+2: `findByGradoOrderByFechaAsc` y `@Query buscarProximas`). Todos los repositorios tienen ahora 2 o más consultas. |
+| Configuración | Nuevo `config/DataSeederConfig` (opcional con `SEED_DATA=true`), `.env.example`, `server.port=${PORT:8080}` y `.env` agregado a `.gitignore`. |
+| Documentación | Este README: idea de negocio, enlaces a Swagger UI y Scalar, y esta sección de cambios. |
+
+> Nota de seguridad: si el `.env` ya fue subido a Git alguna vez, ejecuta `git rm --cached .env` y cambia la contraseña de la base de datos.
